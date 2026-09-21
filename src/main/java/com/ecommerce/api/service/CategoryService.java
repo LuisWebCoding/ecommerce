@@ -3,6 +3,8 @@ package com.ecommerce.api.service;
 import com.ecommerce.api.dto.CategoryRequestDTO;
 import com.ecommerce.api.dto.CategoryResponseDTO;
 import com.ecommerce.api.entity.Category;
+import com.ecommerce.api.exception.ResourceNotFoundException;
+import com.ecommerce.api.exception.BusinessException;
 import com.ecommerce.api.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +32,7 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public CategoryResponseDTO findById(Long id) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Categoria não encontrada com id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada com id: " + id));
         return new CategoryResponseDTO(category);
     }
 
@@ -38,7 +40,7 @@ public class CategoryService {
     public CategoryResponseDTO create(CategoryRequestDTO dto) {
         // Regra de negócio: não permitir categorias com o mesmo nome
         if (categoryRepository.existsByNameIgnoreCase(dto.getName())) {
-            throw new RuntimeException("Já existe uma categoria cadastrada com o nome: " + dto.getName());
+            throw new BusinessException("Já existe uma categoria cadastrada com o nome: " + dto.getName());
         }
 
         Category category = new Category();
@@ -51,7 +53,7 @@ public class CategoryService {
     @Transactional
     public void delete(Long id) {
         if (!categoryRepository.existsById(id)) {
-            throw new RuntimeException("Categoria não encontrada para exclusão.");
+            throw new ResourceNotFoundException("Categoria não encontrada para exclusão com id: " + id);
         }
         categoryRepository.deleteById(id);
     }
