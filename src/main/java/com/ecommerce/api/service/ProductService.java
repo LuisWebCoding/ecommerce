@@ -9,6 +9,8 @@ import com.ecommerce.api.repository.CategoryRepository;
 import com.ecommerce.api.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -21,6 +23,12 @@ public class ProductService {
     public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDTO> findAllPaged(Pageable pageable) {
+        return productRepository.findAll(pageable)
+                .map(ProductResponseDTO::new);
     }
 
     @Transactional(readOnly = true)
@@ -53,6 +61,24 @@ public class ProductService {
 
         product = productRepository.save(product);
         return new ProductResponseDTO(product);
+    }
+
+    @Transactional
+    public ProductResponseDTO update(Long id, ProductRequestDTO dto) {
+        Product entity = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com id: " + id));
+
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada com id: " + dto.getCategoryId()));
+
+        entity.setName(dto.getName());
+        entity.setDescription(dto.getDescription());
+        entity.setPrice(dto.getPrice());
+        entity.setStockQuantity(dto.getStockQuantity());
+        entity.setCategory(category);
+
+        entity = productRepository.save(entity);
+        return new ProductResponseDTO(entity);
     }
 
     @Transactional
