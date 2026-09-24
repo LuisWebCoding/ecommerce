@@ -3,34 +3,41 @@ package com.ecommerce.api.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
-@Entity
-@Table(name = "tb_order_items")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-public class OrderItem {
+@Entity
+@Table(name = "tb_order_item")
+public class OrderItem implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "order_id", nullable = false)
-    public Order order;
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order order;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "product_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "product_id")
     private Product product;
 
-    @Column(nullable = false)
     private Integer quantity;
-
-    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
+
+    // Construtor específico utilizado no OrderService:
+    public OrderItem(Order order, Product product, Integer quantity, BigDecimal price) {
+        this.order = order;
+        this.product = product;
+        this.quantity = quantity;
+        this.price = price;
+    }
 
     public BigDecimal getSubTotal() {
         return price.multiply(BigDecimal.valueOf(quantity));

@@ -3,10 +3,7 @@ package com.ecommerce.api.service;
 import com.ecommerce.api.dto.OrderItemRequestDTO;
 import com.ecommerce.api.dto.OrderRequestDTO;
 import com.ecommerce.api.dto.OrderResponseDTO;
-import com.ecommerce.api.entity.Customer;
-import com.ecommerce.api.entity.Order;
-import com.ecommerce.api.entity.OrderItem;
-import com.ecommerce.api.entity.Product;
+import com.ecommerce.api.entity.*;
 import com.ecommerce.api.exception.BusinessException;
 import com.ecommerce.api.exception.ResourceNotFoundException;
 import com.ecommerce.api.repository.CustomerRepository;
@@ -15,6 +12,7 @@ import com.ecommerce.api.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -52,6 +50,8 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado com id: " + dto.getCustomerId()));
 
         Order order = new Order();
+        order.setMoment(Instant.now());
+        order.setStatus(OrderStatus.WAITING_PAYMENT);
         order.setCustomer(customer);
 
         for (OrderItemRequestDTO itemDto : dto.getItems()) {
@@ -60,20 +60,14 @@ public class OrderService {
 
             if (product.getStockQuantity() < itemDto.getQuantity()) {
                 throw new BusinessException("Estoque insuficiente para o produto: " + product.getName()
-                        + " (Disponível: " + product.getStockQuantity() + ", Solicitado: " + itemDto.getQuantity() + ")");
+                        + ". Disponível: " + product.getStockQuantity()
+                        + ", Solicitado: " + itemDto.getQuantity());
             }
 
-            // Abate do estoque em tempo real
             product.setStockQuantity(product.getStockQuantity() - itemDto.getQuantity());
             productRepository.save(product);
 
-            // Criação do item com congelamento do preço
-            OrderItem item = new OrderItem();
-            item.setOrder(order);
-            item.setProduct(product);
-            item.setQuantity(itemDto.getQuantity());
-            item.setPrice(product.getPrice());
-
+            OrderItem item = new OrderItem(order, product, itemDto.getQuantity(), product.getPrice());
             order.getItems().add(item);
         }
 
